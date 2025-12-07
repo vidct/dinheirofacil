@@ -2,95 +2,88 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Chat WebRTC Simples</title>
-
+<title>Chat WebRTC</title>
 <style>
-body {
-  background: #000;
-  color: #0f0;
-  font-family: sans-serif;
-}
-textarea { width: 100%; height: 100px; }
+body { background:#000; color:#0f0; font-family:sans-serif }
+textarea { width:100%; height:120px }
 </style>
 </head>
 
 <body>
 
-<h2>Chat WebRTC (sem Firebase)</h2>
-
 <button onclick="criar()">CRIAR</button>
 <button onclick="entrar()">ENTRAR</button>
 
-<p>Copie este código e mande:</p>
+<p>Código local:</p>
 <textarea id="local"></textarea>
 
-<p>Cole o código recebido:</p>
+<p>Código remoto:</p>
 <textarea id="remoto"></textarea>
 
 <hr>
 
-<div id="incomingMessages"></div>
-
-<input id="messageBox" placeholder="Mensagem">
-<button id="sendButton">Enviar</button>
+<div id="msgs"></div>
+<input id="msg">
+<button onclick="enviar()">Enviar</button>
 
 <script>
-// ===== INÍCIO DO CÓDIGO WEBRTC =====
+// ===== INÍCIO =====
 
 let pc;
 let canal;
+let criador = false;
 
-// cria conexão
 function criar() {
-
+  criador = true;
   pc = new RTCPeerConnection();
 
   canal = pc.createDataChannel("chat");
-
-  canal.onmessage = e => {
-    incomingMessages.innerHTML += e.data + "<br>";
-  };
+  canal.onmessage = e => msgs.innerHTML += e.data + "<br>";
 
   pc.onicecandidate = e => {
-    if (!e.candidate) {
+    if (!e.candidate)
       local.value = JSON.stringify(pc.localDescription);
-    }
   };
 
   pc.createOffer().then(o => pc.setLocalDescription(o));
 }
 
-// entra na conexão
 function entrar() {
+  const desc = JSON.parse(remoto.value);
 
-  pc = new RTCPeerConnection();
+  // SE NÃO EXISTE CONEXÃO, É O LADO B
+  if (!pc) {
+    pc = new RTCPeerConnection();
 
-  pc.ondatachannel = e => {
-    canal = e.channel;
-    canal.onmessage = ev => {
-      incomingMessages.innerHTML += ev.data + "<br>";
+    pc.ondatachannel = e => {
+      canal = e.channel;
+      canal.onmessage = ev => msgs.innerHTML += ev.data + "<br>";
     };
-  };
 
-  pc.onicecandidate = e => {
-    if (!e.candidate) {
-      local.value = JSON.stringify(pc.localDescription);
-    }
-  };
+    pc.onicecandidate = e => {
+      if (!e.candidate)
+        local.value = JSON.stringify(pc.localDescription);
+    };
 
-  const offer = JSON.parse(remoto.value);
-  pc.setRemoteDescription(offer);
+    pc.setRemoteDescription(desc).then(() =>
+      pc.createAnswer().then(a => pc.setLocalDescription(a))
+    );
 
-  pc.createAnswer().then(a => pc.setLocalDescription(a));
+  } else {
+    // ✅ AQUI É O PASSO 9
+    // NÃO CRIA NADA
+    // NÃO GERA SDP
+    // SÓ FINALIZA
+    pc.setRemoteDescription(desc);
+  }
 }
 
-// envia mensagem
-sendButton.onclick = () => {
-  canal.send(messageBox.value);
-  messageBox.value = "";
-};
+function enviar() {
+  canal.send(msg.value);
+  msg.value = "";
+}
 
-// ===== FIM DO CÓDIGO WEBRTC =====
+// ===== FIM =====
 </script>
 
 </body>
