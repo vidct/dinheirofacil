@@ -1,36 +1,97 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Download Curso</title>
-  <style>
-    :root{--bg:#0f1724;--card:#0b1220;--accent:#10b981;--text:#e6eef8}
-    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
-    body{background:linear-gradient(180deg,#071024 0%, #071733 100%);color:var(--text);display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{background:rgba(255,255,255,0.03);padding:36px;border-radius:12px;box-shadow:0 6px 30px rgba(2,6,23,0.6);max-width:760px;width:100%;text-align:center}
-    h1{margin:0 0 18px;font-size:18px;letter-spacing:0.6px}
-    p{margin:0 0 26px;font-weight:600}
-    .download-btn,.link-btn{display:inline-block;padding:14px 26px;border-radius:10px;text-decoration:none;font-weight:700;letter-spacing:0.6px;background:linear-gradient(90deg,var(--accent),#06c);color:#042018;box-shadow:0 8px 20px rgba(16,185,129,0.14);transition:transform .14s ease,box-shadow .14s ease;margin-top:10px}
-    .download-btn:active,.link-btn:active{transform:translateY(1px)}
-    .small{font-size:13px;opacity:0.85;margin-top:12px}
-    .curso-texto{margin-top:24px;text-align:left;background:rgba(255,255,255,0.05);padding:16px;border-radius:8px;font-size:15px;line-height:1.6}
-    @media(min-width:700px){h1{font-size:20px}}
-  </style>
+<meta charset="utf-8">
+<title>Chat WebRTC Simples</title>
+
+<style>
+body {
+  background: #000;
+  color: #0f0;
+  font-family: sans-serif;
+}
+textarea { width: 100%; height: 100px; }
+</style>
 </head>
+
 <body>
-  <div class="card" role="region" aria-label="Download do curso">
-    <h1>QUER GANHAR 50 A 500 REAIS ABAIXE ESSE CURSO</h1>
-    <a class="download-btn" href="curso.txt" download="curso.txt" id="downloadBtn">DOWLOAD CURSO</a>
-    <br>
-    <a class="link-btn" href="https://encurta.net/ref/113784756542738934987" target="_blank">AQUI!!!!!!</a>
-    <div class="small">Clique no botão para iniciar o download do curso.</div>
-    <!-- Aqui você pode colocar o texto do curso -->
-    <div class="curso-texto">
-      <h2>Conteúdo do Curso</h2>
-      <p>Aqui vai o texto explicando o que o curso ensina, dicas e informações para motivar o usuário a baixar. <br>
-      Exemplo: "Aprenda a ganhar dinheiro online de forma simples e prática, usando apenas o seu celular."</p>
-    </div>
-  </div>
+
+<h2>Chat WebRTC (sem Firebase)</h2>
+
+<button onclick="criar()">CRIAR</button>
+<button onclick="entrar()">ENTRAR</button>
+
+<p>Copie este código e mande:</p>
+<textarea id="local"></textarea>
+
+<p>Cole o código recebido:</p>
+<textarea id="remoto"></textarea>
+
+<hr>
+
+<div id="incomingMessages"></div>
+
+<input id="messageBox" placeholder="Mensagem">
+<button id="sendButton">Enviar</button>
+
+<script>
+// ===== INÍCIO DO CÓDIGO WEBRTC =====
+
+let pc;
+let canal;
+
+// cria conexão
+function criar() {
+
+  pc = new RTCPeerConnection();
+
+  canal = pc.createDataChannel("chat");
+
+  canal.onmessage = e => {
+    incomingMessages.innerHTML += e.data + "<br>";
+  };
+
+  pc.onicecandidate = e => {
+    if (!e.candidate) {
+      local.value = JSON.stringify(pc.localDescription);
+    }
+  };
+
+  pc.createOffer().then(o => pc.setLocalDescription(o));
+}
+
+// entra na conexão
+function entrar() {
+
+  pc = new RTCPeerConnection();
+
+  pc.ondatachannel = e => {
+    canal = e.channel;
+    canal.onmessage = ev => {
+      incomingMessages.innerHTML += ev.data + "<br>";
+    };
+  };
+
+  pc.onicecandidate = e => {
+    if (!e.candidate) {
+      local.value = JSON.stringify(pc.localDescription);
+    }
+  };
+
+  const offer = JSON.parse(remoto.value);
+  pc.setRemoteDescription(offer);
+
+  pc.createAnswer().then(a => pc.setLocalDescription(a));
+}
+
+// envia mensagem
+sendButton.onclick = () => {
+  canal.send(messageBox.value);
+  messageBox.value = "";
+};
+
+// ===== FIM DO CÓDIGO WEBRTC =====
+</script>
+
 </body>
 </html>
